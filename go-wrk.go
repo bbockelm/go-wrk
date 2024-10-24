@@ -22,7 +22,7 @@ var versionFlag bool = false
 var helpFlag bool = false
 var duration int = 10 //seconds
 var goroutines int = 2
-var testUrl string
+var testUrls []string
 var method string = "GET"
 var host string
 var headerFlags util.HeaderList
@@ -108,15 +108,15 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		testUrl = string(url)
+		testUrls = strings.Split(string(url), "\n")
 	} else {
-		testUrl = flag.Arg(0)
+		testUrls = flag.Args()
 	}
 
 	if versionFlag {
 		fmt.Println("Version:", APP_VERSION)
 		return
-	} else if helpFlag || len(testUrl) == 0 {
+	} else if helpFlag || len(testUrls) == 0 {
 		printDefaults()
 		return
 	}
@@ -125,7 +125,7 @@ func main() {
 		runtime.GOMAXPROCS(cpus)
 	}
 
-	fmt.Printf("Running %vs test @ %v\n  %v goroutine(s) running concurrently\n", duration, testUrl, goroutines)
+	fmt.Printf("Running %vs test @ %v\n  %v goroutine(s) running concurrently\n", duration, testUrls[0], goroutines)
 
 	if len(reqBody) > 0 && reqBody[0] == '@' {
 		bodyFilename := reqBody[1:]
@@ -137,7 +137,7 @@ func main() {
 		reqBody = string(data)
 	}
 
-	loadGen := loader.NewLoadCfg(duration, goroutines, testUrl, reqBody, method, host, header, statsAggregator, timeoutms,
+	loadGen := loader.NewLoadCfg(duration, goroutines, testUrls, reqBody, method, host, header, statsAggregator, timeoutms,
 		allowRedirectsFlag, disableCompression, disableKeepAlive, skipVerify, clientCert, clientKey, caCert, http2)
 
 	start := time.Now()

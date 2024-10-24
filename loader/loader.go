@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -23,7 +24,7 @@ const (
 type LoadCfg struct {
 	duration           int // seconds
 	goroutines         int
-	testUrl            string
+	testUrls           []string
 	reqBody            string
 	method             string
 	host               string
@@ -53,7 +54,7 @@ type RequesterStats struct {
 
 func NewLoadCfg(duration int, // seconds
 	goroutines int,
-	testUrl string,
+	testUrls []string,
 	reqBody string,
 	method string,
 	host string,
@@ -68,7 +69,7 @@ func NewLoadCfg(duration int, // seconds
 	clientKey string,
 	caCert string,
 	http2 bool) (rt *LoadCfg) {
-	rt = &LoadCfg{duration, goroutines, testUrl, reqBody, method, host, header, statsAggregator, timeoutms,
+	rt = &LoadCfg{duration, goroutines, testUrls, reqBody, method, host, header, statsAggregator, timeoutms,
 		allowRedirects, disableCompression, disableKeepAlive, skipVerify, 0, clientCert, clientKey, caCert, http2}
 	return
 }
@@ -183,8 +184,14 @@ func (cfg *LoadCfg) RunSingleLoadSession() {
 		log.Fatal(err)
 	}
 
+	idx := rand.Int()
 	for time.Since(start).Seconds() <= float64(cfg.duration) && atomic.LoadInt32(&cfg.interrupted) == 0 {
-		respSize, reqDur, err := DoRequest(httpClient, cfg.header, cfg.method, cfg.host, cfg.testUrl, cfg.reqBody)
+		testUrl := cfg.testUrls[idx % len(cfg.testUrls)]
+		for testUrl == "" {
+			idx += 1
+			testUrl = cfg.testUrls[idx % len(cfg.testUrls)]
+		}
+		respSize, reqDur, err := DoRequest(httpClient, cfg.header, cfg.method, cfg.host, testUrl, cfg.reqBody)
 		if err != nil {
 			stats.ErrMap[unwrap(err).Error()]+=1
 			stats.NumErrs++
