@@ -14,7 +14,7 @@ import (
 	"time"
 
 	histo "github.com/HdrHistogram/hdrhistogram-go"
-	"github.com/tsliwowicz/go-wrk/util"
+	"github.com/bbockelm/go-wrk/util"
 )
 
 const (
